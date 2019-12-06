@@ -454,7 +454,8 @@ function draw_display_list(nwo,sort)
 		if p.particle then
 			nx,ny,sz,col=(p[1]-63)*zoom+63,(p[2]-p[3]-63)*zoom+63,p[5]*zoom,p[4]
 			clipx,clipy=nx-camx,ny-camy
-		 	if clipx+sz>-1 and clipx-sz<128 and clipy+sz>-1 and clipy-sz<128 then
+		 	--if clipx+sz>-1 and clipx-sz<128 and clipx+sz>-1 and clipy-sz<128 then
+			if band(bor(clipx+sz, clipy+sz), 0xff80)==0 and band(bor(clipx-sz, clipy-sz), 0xff80)==0 then
 				--set light
 				fship=nil
 				if p[15] and isnight then --particle can be lit -- slooow
@@ -897,7 +898,7 @@ function update_ship(s)
 end
 
 function draw_ship(s)
-	local model,nx,ny=(zoom_lvl>1) and s.model2x or s.model,flr((s[1]-63)*zoom_lvl+63),flr((s[2]-63)*zoom_lvl+63)
+	local model,nx,ny=(zoom_lvl>1) and s.model2x or s.model,(s[1]-63)*zoom_lvl+63,(s[2]-63)*zoom_lvl+63
 
 	if timeofday==time_night then
 		if s.firing!=broad_none then
@@ -1155,15 +1156,11 @@ function button_up(b,player)
 	if( not player.ship ) return
 	if( player.ship.ai ) return
 
-	if b==4 or b==5 then
-		if player.charging then
-			if (b==4 and player.chargeside==broad_left) or (b==5 and player.chargeside==broad_right) then
-				player.charging=false
-				make_event(evt_broadside,{player.ship,player.chargeside,player.chargetimer})
-				player.chargetimer=0
-				sfx(6,-2)
-			end
-		end
+	if player.charging and ((b==4 and player.chargeside==broad_left) or (b==5 and player.chargeside==broad_right)) then
+		player.charging=false
+		make_event(evt_broadside,{player.ship,player.chargeside,player.chargetimer})
+		player.chargetimer=0
+		sfx(6,-2)
 	end
 end
 
@@ -1179,14 +1176,14 @@ function button_down(b,player)
 	if( player.ship.ai ) return
 
 	if (b==4 or b==5) and not player.charging then
-			if player.ship.reloadcounter==0 then
-				player.chargeside=b==4 and broad_left or broad_right
-				player.charging=true
-				player.chargetimer=0
-				sfx(6)
-			else
-				sfx(1)
-			end
+		if player.ship.reloadcounter==0 then
+			player.chargeside=b==4 and broad_left or broad_right
+			player.charging=true
+			player.chargetimer=0
+			sfx(6)
+		else
+			sfx(1)
+		end
 	end
 end
 
@@ -1194,9 +1191,7 @@ function button_held(b,player)
 	if(not player.ship ) return
 	if( player.ship.ai ) return
 
-	if player.charging then
-		if ((b==4 and player.chargeside==broad_left) or (b==5 and player.chargeside==broad_right)) player.chargetimer+=1
-	end
+	if (player.charging and ((b==4 and player.chargeside==broad_left) or (b==5 and player.chargeside==broad_right))) player.chargetimer+=1
 
 	if (b==0) player.ship.helm+=0.01
 	if (b==1) player.ship.helm-=0.01
@@ -1933,3 +1928,4 @@ __music__
 04 12164344
 01 13424344
 04 04424344
+
